@@ -22,16 +22,15 @@ impl Request {
 
     pub fn send(&self) -> Option<Vec<u8>> {
         let mut stream = self.connect();
-        let req_str = format!("GET / HTTP/1.1\nHost: {}\n\n", self.host);
+        let req_str = format!("GET / HTTP/1.1\nHost: {}\nConnection: close\n\n", self.host);
         println!("Request:\n{}", req_str);
         let _ = stream.write_all(&req_str.into_bytes());
+        let _ = stream.flush();
 
-        let mut bytes = [0; 2048];
-        let res = match stream.read(&mut bytes) {
-            Ok(_) => bytes,
+        let mut buf = Vec::new();
+        match stream.read_to_end(&mut buf) {
+            Ok(_) => Some(buf),
             Err(_) => panic!("Failed to read socket stream."),
-        };
-
-        Some(res.to_vec())
+        }
     }
 }
