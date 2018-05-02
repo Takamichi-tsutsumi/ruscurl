@@ -1,10 +1,11 @@
 extern crate getopts;
 
+mod req;
+
 use getopts::{Options, Matches};
 use std::env;
 use std::process::exit;
-use std::io::{Read, Write};
-use std::net::{SocketAddr, ToSocketAddrs, TcpStream};
+use req::Request;
 
 
 // Example usage
@@ -25,27 +26,9 @@ fn main() {
         exit(1);
     }
 
-
     let host: String = matches.free[0].clone();
-    // resolve DNS
-    let addrs: Vec<SocketAddr> = host.to_socket_addrs()
-        .expect("Unable to resolve domain")
-        .collect();
+    let req: Request = Request::new(host);
 
-    let mut stream: TcpStream =
-        TcpStream::connect(&addrs[..]).expect("Couldn't connect to server.");
-
-    let req_str: &[u8] = &format!("GET / HTTP/1.1\n\n").into_bytes();
-
-    let _ = stream.write_all(req_str);
-    let mut bytes = [0; 2048];
-    match stream.read(&mut bytes) {
-        Ok(_) => {
-            println!("{}", String::from_utf8_lossy(&bytes));
-
-        }
-        Err(_) => {
-            panic!("Failed to read socket stream.");
-        }
-    }
+    let res = req.send().unwrap();
+    println!("Response:\n{}", String::from_utf8_lossy(&res));
 }
